@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 
@@ -13,6 +13,7 @@ contract Lottery is VRFConsumerBase {
     bytes32 internal keyHash; 
     uint internal fee;        
     uint public randomResult;
+    uint duration ;
 
     constructor()
         VRFConsumerBase(
@@ -20,10 +21,11 @@ contract Lottery is VRFConsumerBase {
             0x01BE23585060835E02B77ef475b0Cc51aA1e0709  // LINT token address
         ) {
             keyHash = 0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311;
-            fee = 0.1 * 10 ** 18;    // 0.1 LINK
+            fee = 0.1 * 10 ** 18;    
 
             owner = msg.sender;
             lotteryId = 1;
+            duration = block.timestamp + (1 * 1 hours);
         }
 
     modifier onlyowner() {
@@ -57,14 +59,19 @@ contract Lottery is VRFConsumerBase {
         require(msg.value == .01 ether);
         players.push(payable(msg.sender));
     }
-
-    function payWinner() public onlyowner {
+    function getWiner() public  onlyowner {
         getRandomNumber();
+    }
+
+    function payWinner() internal  {
+        require(block.timestamp >= duration,"after one hour only you winner will selected ");
+        
         uint index = randomResult % players.length;
         players[index].transfer(address(this).balance);
 
         lotteryHistory[lotteryId] = players[index];
         lotteryId++;
+        duration = block.timestamp + (1 * 1 hours);
         
         players = new address payable[](0);
     }
